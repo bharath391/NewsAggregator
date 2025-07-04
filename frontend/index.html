@@ -1,13 +1,429 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Aggregator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'serif': ['Playfair Display', 'serif'],
+                        'body': ['Crimson Text', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 font-body">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-serif font-bold text-gray-900">News Aggregator</h1>
+                </div>
+                
+                <!-- Desktop Navigation -->
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#" class="text-gray-700 hover:text-blue-600 transition-colors font-medium" onclick="showSection('home')">Home</a>
+                    <a href="#" class="text-gray-700 hover:text-blue-600 transition-colors font-medium" onclick="showSection('categories')">Categories</a>
+                    <a href="#" class="text-gray-700 hover:text-blue-600 transition-colors font-medium" onclick="showSection('bookmarks')">Bookmarks</a>
+                    <a href="#" class="text-gray-700 hover:text-blue-600 transition-colors font-medium" onclick="showSection('search')">Search</a>
+                    <div class="relative">
+                        <button id="userMenuBtn" class="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors">
+                            <span class="font-medium" id="userNameDisplay">Guest</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div id="userMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 hidden">
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onclick="showSection('profile')">Profile</a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onclick="showSection('settings')">Settings</a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onclick="logout()">Logout</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile menu button -->
+                <div class="md:hidden">
+                    <button id="mobileMenuBtn" class="text-gray-700 hover:text-blue-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation -->
+        <div id="mobileMenu" class="md:hidden bg-white border-t hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1">
+                <a href="#" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-md" onclick="showSection('home')">Home</a>
+                <a href="#" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-md" onclick="showSection('categories')">Categories</a>
+                <a href="#" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-md" onclick="showSection('bookmarks')">Bookmarks</a>
+                <a href="#" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-md" onclick="showSection('search')">Search</a>
+                <a href="#" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-md" onclick="showSection('profile')">Profile</a>
+                <a href="#" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-md" onclick="showSection('settings')">Settings</a>
+                <a href="#" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-md" onclick="logout()">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Authentication Modal -->
+    <div id="authModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="bg-white rounded-lg p-8 max-w-md w-full">
+                <h2 class="text-2xl font-serif font-bold text-gray-900 mb-6 text-center">Welcome to News Aggregator</h2>
+                
+                <!-- Login Form -->
+                <div id="loginForm">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input type="email" id="loginEmail" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <input type="password" id="loginPassword" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <button onclick="login()" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">
+                            Login
+                        </button>
+                        <p class="text-center text-sm text-gray-600">
+                            Don't have an account? 
+                            <a href="#" onclick="showRegisterForm()" class="text-blue-600 hover:underline">Register here</a>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Register Form -->
+                <div id="registerForm" class="hidden">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                            <input type="text" id="registerName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input type="email" id="registerEmail" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <input type="password" id="registerPassword" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <button onclick="register()" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">
+                            Register
+                        </button>
+                        <p class="text-center text-sm text-gray-600">
+                            Already have an account? 
+                            <a href="#" onclick="showLoginForm()" class="text-blue-600 hover:underline">Login here</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Home Section -->
+        <section id="homeSection" class="section">
+            <!-- View Toggle -->
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h2 class="text-3xl font-serif font-bold text-gray-900">Latest News</h2>
+                    <p class="text-gray-600 mt-2">Stay updated with the latest headlines from around the world</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <label class="text-sm font-medium text-gray-700">View:</label>
+                    <select id="viewToggle" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="changeView()">
+                        <option value="grid">Grid</option>
+                        <option value="list">List</option>
+                        <option value="magazine">Magazine</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Featured News -->
+            <div class="mb-12">
+                <h3 class="text-2xl font-serif font-semibold text-gray-900 mb-6">Featured Stories</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2">
+                        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                            <img src="https://via.placeholder.com/800x400" alt="Featured News" class="w-full h-64 object-cover">
+                            <div class="p-6">
+                                <div class="flex items-center space-x-2 mb-3">
+                                    <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">Breaking</span>
+                                    <span class="text-gray-500 text-sm">Technology</span>
+                                </div>
+                                <h4 class="text-xl font-serif font-semibold text-gray-900 mb-3">Major Tech Breakthrough Announced</h4>
+                                <p class="text-gray-600 mb-4">Scientists have made a groundbreaking discovery that could revolutionize the way we interact with technology...</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-500">2 hours ago</span>
+                                    <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">Read More</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                            <img src="https://via.placeholder.com/400x200" alt="News" class="w-full h-32 object-cover">
+                            <div class="p-4">
+                                <span class="text-xs text-gray-500 mb-2 block">Politics</span>
+                                <h5 class="font-serif font-semibold text-gray-900 mb-2">Global Summit Concludes</h5>
+                                <p class="text-sm text-gray-600">World leaders reach consensus on climate action...</p>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                            <img src="https://via.placeholder.com/400x200" alt="News" class="w-full h-32 object-cover">
+                            <div class="p-4">
+                                <span class="text-xs text-gray-500 mb-2 block">Sports</span>
+                                <h5 class="font-serif font-semibold text-gray-900 mb-2">Championship Finals Set</h5>
+                                <p class="text-sm text-gray-600">Teams prepare for the ultimate showdown...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- News Grid -->
+            <div id="newsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- News items will be loaded here -->
+            </div>
+        </section>
+
+        <!-- Categories Section -->
+        <section id="categoriesSection" class="section hidden">
+            <div class="mb-8">
+                <h2 class="text-3xl font-serif font-bold text-gray-900">Categories</h2>
+                <p class="text-gray-600 mt-2">Explore news by category</p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer" onclick="loadCategoryNews('technology')">
+                    <div class="text-blue-600 text-4xl mb-4">💻</div>
+                    <h3 class="font-serif font-semibold text-gray-900 mb-2">Technology</h3>
+                    <p class="text-sm text-gray-600">Latest tech news and innovations</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer" onclick="loadCategoryNews('politics')">
+                    <div class="text-red-600 text-4xl mb-4">🏛️</div>
+                    <h3 class="font-serif font-semibold text-gray-900 mb-2">Politics</h3>
+                    <p class="text-sm text-gray-600">Political developments worldwide</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer" onclick="loadCategoryNews('sports')">
+                    <div class="text-green-600 text-4xl mb-4">⚽</div>
+                    <h3 class="font-serif font-semibold text-gray-900 mb-2">Sports</h3>
+                    <p class="text-sm text-gray-600">Sports news and updates</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer" onclick="loadCategoryNews('business')">
+                    <div class="text-yellow-600 text-4xl mb-4">📊</div>
+                    <h3 class="font-serif font-semibold text-gray-900 mb-2">Business</h3>
+                    <p class="text-sm text-gray-600">Market trends and business news</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer" onclick="loadCategoryNews('entertainment')">
+                    <div class="text-purple-600 text-4xl mb-4">🎬</div>
+                    <h3 class="font-serif font-semibold text-gray-900 mb-2">Entertainment</h3>
+                    <p class="text-sm text-gray-600">Movies, music, and celebrity news</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer" onclick="loadCategoryNews('health')">
+                    <div class="text-pink-600 text-4xl mb-4">🏥</div>
+                    <h3 class="font-serif font-semibold text-gray-900 mb-2">Health</h3>
+                    <p class="text-sm text-gray-600">Health and wellness updates</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer" onclick="loadCategoryNews('science')">
+                    <div class="text-indigo-600 text-4xl mb-4">🔬</div>
+                    <h3 class="font-serif font-semibold text-gray-900 mb-2">Science</h3>
+                    <p class="text-sm text-gray-600">Scientific discoveries and research</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow cursor-pointer" onclick="loadCategoryNews('world')">
+                    <div class="text-gray-600 text-4xl mb-4">🌍</div>
+                    <h3 class="font-serif font-semibold text-gray-900 mb-2">World</h3>
+                    <p class="text-sm text-gray-600">International news and events</p>
+                </div>
+            </div>
+
+            <div id="categoryNewsContainer" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 id="categoryTitle" class="text-2xl font-serif font-semibold text-gray-900"></h3>
+                    <button onclick="hideCategoryNews()" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div id="categoryNews" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Category news will be loaded here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Bookmarks Section -->
+        <section id="bookmarksSection" class="section hidden">
+            <div class="mb-8">
+                <h2 class="text-3xl font-serif font-bold text-gray-900">Bookmarked Articles</h2>
+                <p class="text-gray-600 mt-2">Your saved articles for later reading</p>
+            </div>
+
+            <div id="bookmarksContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Bookmarked articles will be loaded here -->
+            </div>
+        </section>
+
+        <!-- Search Section -->
+        <section id="searchSection" class="section hidden">
+            <div class="mb-8">
+                <h2 class="text-3xl font-serif font-bold text-gray-900">Search News</h2>
+                <p class="text-gray-600 mt-2">Find articles by keyword or topic</p>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                <div class="flex space-x-4">
+                    <input type="text" id="searchInput" placeholder="Enter keywords..." class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button onclick="searchNews()" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                        Search
+                    </button>
+                </div>
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <span class="text-sm text-gray-600">Popular searches:</span>
+                    <button class="text-sm text-blue-600 hover:underline" onclick="searchPopular('climate change')">Climate Change</button>
+                    <button class="text-sm text-blue-600 hover:underline" onclick="searchPopular('artificial intelligence')">AI</button>
+                    <button class="text-sm text-blue-600 hover:underline" onclick="searchPopular('space exploration')">Space</button>
+                    <button class="text-sm text-blue-600 hover:underline" onclick="searchPopular('cryptocurrency')">Crypto</button>
+                </div>
+            </div>
+
+            <div id="searchResults" class="hidden">
+                <h3 class="text-xl font-serif font-semibold text-gray-900 mb-6">Search Results</h3>
+                <div id="searchResultsContainer" class="space-y-6">
+                    <!-- Search results will be loaded here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Profile Section -->
+        <section id="profileSection" class="section hidden">
+            <div class="mb-8">
+                <h2 class="text-3xl font-serif font-bold text-gray-900">Profile</h2>
+                <p class="text-gray-600 mt-2">Manage your account information</p>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                        <input type="text" id="profileName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" id="profileEmail" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Preferred Categories</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" class="mr-2 category-pref" value="technology">
+                                <span class="text-sm">Technology</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" class="mr-2 category-pref" value="politics">
+                                <span class="text-sm">Politics</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" class="mr-2 category-pref" value="sports">
+                                <span class="text-sm">Sports</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" class="mr-2 category-pref" value="business">
+                                <span class="text-sm">Business</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">News Sources</label>
+                        <select multiple class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" id="preferredSources">
+                            <option value="bbc">BBC</option>
+                            <option value="cnn">CNN</option>
+                            <option value="reuters">Reuters</option>
+                            <option value="ap">Associated Press</option>
+                            <option value="guardian">The Guardian</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <button onclick="saveProfile()" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Settings Section -->
+        <section id="settingsSection" class="section hidden">
+            <div class="mb-8">
+                <h2 class="text-3xl font-serif font-bold text-gray-900">Settings</h2>
+                <p class="text-gray-600 mt-2">Customize your news experience</p>
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="text-lg font-serif font-semibold text-gray-900 mb-4">Display Settings</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-gray-700">Dark Mode</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" value="" class="sr-only peer" id="darkModeToggle">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-gray-700">Compact View</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" value="" class="sr-only peer" id="compactToggle">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Articles Per Page</label>
+                            <select id="articlesPerPage" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="12">12 articles</option>
+                                <option value="24">24 articles</option>
+                                <option value="36">36 articles</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="text-lg font-serif font-semibold text-gray-900 mb-4">Notification Settings</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-gray-700">Breaking News Alerts</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" value="" class="sr-only peer" id="breakingNewsToggle">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-gray-700">Daily Digest</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" value="" class="sr-only peer" id="dailyDigestToggle">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/main.js"></script>
+</body>
 </html>
