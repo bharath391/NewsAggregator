@@ -10,7 +10,7 @@ const errorHandler = require('./middlewares/error.middleware');
 // Route files
 const newsRouter = require('./routes/news.route');
 const authRouter = require('./routes/auth.route');
-
+const notificationRouter = require('./routes/notification.route'); // ✅ added
 
 // Connect to database
 connectDB();
@@ -22,7 +22,7 @@ app.use(cors());
 // Route setup
 app.use('/api/news', newsRouter);
 app.use('/api/auth', authRouter);
-
+app.use('/api/notifications', notificationRouter); // ✅ added
 
 // Global error handler (keep this last)
 app.use(errorHandler);
