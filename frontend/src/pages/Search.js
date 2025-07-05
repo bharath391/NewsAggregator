@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import NewsCard from '../components/NewsCard';
+import ArticleModal from '../components/ArticleModal';
 
 const Search = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -8,6 +10,8 @@ const Search = () => {
   const [hasSearched, setHasSearched] = useState(false);
   const [bookmarkedArticles, setBookmarkedArticles] = useState([]);
   const [searchHistory, setSearchHistory] = useState([]);
+  const [selectedArticle, setSelectedArticle] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const popularSearches = [
     'climate change',
@@ -53,59 +57,10 @@ const Search = () => {
       setHasSearched(true);
       saveSearchHistory(query);
 
-      // Commented out API call - replace with actual backend later
-      /*
-      const response = await axios.get(`/api/news/search?q=${encodeURIComponent(query)}`, {
-        headers: { Authorization: `Bearer ${user.token}` }
-      });
-      setSearchResults(response.data.articles);
-      */
-
-      // Dummy search results for frontend testing
-      const dummyResults = [
-        {
-          id: 1001,
-          title: `Breaking: ${query} Development Announced`,
-          description: `Major developments in ${query} have been announced by leading experts in the field, promising significant implications for the future.`,
-          image: 'https://via.placeholder.com/400x250',
-          category: 'technology',
-          source: 'News Today',
-          publishedAt: '1 hour ago',
-          url: '#'
-        },
-        {
-          id: 1002,
-          title: `Global Impact of ${query} Research`,
-          description: `New research on ${query} reveals surprising findings that could reshape our understanding of the topic.`,
-          image: 'https://via.placeholder.com/400x250',
-          category: 'science',
-          source: 'Research Weekly',
-          publishedAt: '3 hours ago',
-          url: '#'
-        },
-        {
-          id: 1003,
-          title: `${query} Market Trends Show Growth`,
-          description: `Market analysis shows significant growth in ${query} sector, with investors showing increased interest.`,
-          image: 'https://via.placeholder.com/400x250',
-          category: 'business',
-          source: 'Market Report',
-          publishedAt: '5 hours ago',
-          url: '#'
-        },
-        {
-          id: 1004,
-          title: `Government Policy on ${query}`,
-          description: `New government policies regarding ${query} have been introduced to address current challenges.`,
-          image: 'https://via.placeholder.com/400x250',
-          category: 'politics',
-          source: 'Policy News',
-          publishedAt: '8 hours ago',
-          url: '#'
-        }
-      ];
-
-      setSearchResults(dummyResults);
+      // Always send at least one required param (q=searchTerm)
+      const params = { q: query, page: 1, pageSize: 12 };
+      const response = await axios.get('/api/news/everything', { params });
+      setSearchResults(response.data.articles || []);
     } catch (error) {
       console.error('Search error:', error);
     } finally {
@@ -122,13 +77,11 @@ const Search = () => {
   const handleBookmark = (article) => {
     const isBookmarked = bookmarkedArticles.some(b => b.id === article.id);
     let updatedBookmarks;
-    
     if (isBookmarked) {
       updatedBookmarks = bookmarkedArticles.filter(b => b.id !== article.id);
     } else {
       updatedBookmarks = [...bookmarkedArticles, article];
     }
-    
     setBookmarkedArticles(updatedBookmarks);
     localStorage.setItem('bookmarkedArticles', JSON.stringify(updatedBookmarks));
   };
@@ -140,6 +93,16 @@ const Search = () => {
   const clearSearchHistory = () => {
     setSearchHistory([]);
     localStorage.removeItem('searchHistory');
+  };
+
+  const handleReadMore = (article) => {
+    setSelectedArticle(article);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedArticle(null);
   };
 
   return (
@@ -255,10 +218,19 @@ const Search = () => {
               {searchResults.map((article) => (
                 <NewsCard
                   key={article.id}
-                  article={article}
+                  article={{
+                    ...article,
+                    source: article.source && typeof article.source === 'object' && article.source !== null && !Array.isArray(article.source)
+                      ? (article.source.name || '')
+                      : (typeof article.source === 'string' ? article.source : ''),
+                    category: article.category && typeof article.category === 'object' && article.category !== null && !Array.isArray(article.category)
+                      ? (article.category.name || '')
+                      : (typeof article.category === 'string' ? article.category : '')
+                  }}
                   viewMode="grid"
                   onBookmark={handleBookmark}
                   isBookmarked={isArticleBookmarked(article.id)}
+                  onReadMore={handleReadMore}
                 />
               ))}
             </div>
@@ -289,6 +261,15 @@ const Search = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Article Modal */}
+      {selectedArticle && (
+        <ArticleModal
+          article={selectedArticle}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+        />
       )}
     </div>
   );

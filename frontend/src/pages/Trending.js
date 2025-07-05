@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import NewsCard from '../components/NewsCard';
 import ArticleModal from '../components/ArticleModal';
 
@@ -24,51 +25,10 @@ const Trending = () => {
   const loadTrendingNews = async () => {
     try {
       setLoading(true);
-      
-      // Dummy trending data
-      const dummyTrending = [
-        {
-          id: 2001,
-          title: 'AI Revolution: ChatGPT Successor Announced',
-          description: 'The next generation of AI technology promises to revolutionize how we work, learn, and interact with digital systems.',
-          image: 'https://via.placeholder.com/400x250',
-          category: 'technology',
-          source: 'Tech Today',
-          publishedAt: '2 hours ago',
-          trending: true,
-          views: '2.5M',
-          shares: '45K',
-          url: '#'
-        },
-        {
-          id: 2002,
-          title: 'Climate Summit: Historic Agreement Reached',
-          description: 'World leaders unite on unprecedented climate action plan with binding commitments for carbon neutrality.',
-          image: 'https://via.placeholder.com/400x250',
-          category: 'world',
-          source: 'Global News',
-          publishedAt: '4 hours ago',
-          trending: true,
-          views: '1.8M',
-          shares: '32K',
-          url: '#'
-        },
-        {
-          id: 2003,
-          title: 'Space Tourism: First Commercial Flight Success',
-          description: 'Private space company successfully completes first commercial passenger flight to orbit.',
-          image: 'https://via.placeholder.com/400x250',
-          category: 'science',
-          source: 'Space News',
-          publishedAt: '6 hours ago',
-          trending: true,
-          views: '1.2M',
-          shares: '28K',
-          url: '#'
-        }
-      ];
-
-      setTrendingNews(dummyTrending);
+      // Always send at least one required param (country=us)
+      let params = { sortBy: 'popularity', page: 1, pageSize: 12, country: 'us' };
+      const response = await axios.get('/api/news/top-headlines', { params });
+      setTrendingNews(response.data.articles || []);
     } catch (error) {
       console.error('Error loading trending news:', error);
     } finally {
@@ -86,13 +46,11 @@ const Trending = () => {
   const handleBookmark = (article) => {
     const isBookmarked = bookmarkedArticles.some(b => b.id === article.id);
     let updatedBookmarks;
-    
     if (isBookmarked) {
       updatedBookmarks = bookmarkedArticles.filter(b => b.id !== article.id);
     } else {
       updatedBookmarks = [...bookmarkedArticles, article];
     }
-    
     setBookmarkedArticles(updatedBookmarks);
     localStorage.setItem('bookmarkedArticles', JSON.stringify(updatedBookmarks));
   };
@@ -157,7 +115,15 @@ const Trending = () => {
           >
             <div className="relative">
               <NewsCard
-                article={article}
+                article={{
+                  ...article,
+                  source: article.source && typeof article.source === 'object' && article.source !== null && !Array.isArray(article.source)
+                    ? (article.source.name || '')
+                    : (typeof article.source === 'string' ? article.source : ''),
+                  category: article.category && typeof article.category === 'object' && article.category !== null && !Array.isArray(article.category)
+                    ? (article.category.name || '')
+                    : (typeof article.category === 'string' ? article.category : '')
+                }}
                 viewMode="grid"
                 onBookmark={handleBookmark}
                 isBookmarked={isArticleBookmarked(article.id)}

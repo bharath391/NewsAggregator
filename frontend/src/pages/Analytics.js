@@ -166,10 +166,8 @@ const Analytics = () => {
           <div className="space-y-4">
             {analytics.preferences.topCategories.map((category, index) => (
               <div key={category.name} className="animate-slide-up" style={{ animationDelay: `${index * 0.1}s` }}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">{category.name}</span>
-                  <span className="text-sm text-gray-500">{category.articles} articles</span>
-                </div>
+                <span className="text-sm font-medium text-gray-700">{typeof category === 'object' && category !== null && !Array.isArray(category) ? category.name : String(category)}</span>
+                <span className="text-sm text-gray-500">{typeof category === 'object' && category !== null && !Array.isArray(category) && category.articles ? category.articles : ''} articles</span>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
                     className={`h-2 rounded-full transition-all duration-1000 ${
@@ -192,10 +190,8 @@ const Analytics = () => {
           <div className="space-y-4">
             {analytics.preferences.topSources.map((source, index) => (
               <div key={source.name} className="animate-slide-up" style={{ animationDelay: `${index * 0.1}s` }}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">{source.name}</span>
-                  <span className="text-sm text-gray-500">{source.articles} articles</span>
-                </div>
+                <span className="text-sm font-medium text-gray-700">{typeof source === 'object' && source !== null && !Array.isArray(source) ? source.name : String(source)}</span>
+                <span className="text-sm text-gray-500">{typeof source === 'object' && source !== null && !Array.isArray(source) && source.articles ? source.articles : ''} articles</span>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
                     className={`h-2 rounded-full transition-all duration-1000 ${
