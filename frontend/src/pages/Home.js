@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import NewsCard from '../components/NewsCard';
 import ArticleModal from '../components/ArticleModal';
+import axios from 'axios';
 
 const Home = () => {
   const { user } = useAuth();
@@ -21,115 +22,12 @@ const Home = () => {
   const loadNews = async () => {
     try {
       setLoading(true);
-      
-      // Commented out API call - replace with actual backend later
-      /*
-      const response = await axios.get('/api/news/latest', {
-        headers: { Authorization: `Bearer ${user.token}` }
-      });
-      setArticles(response.data.articles);
-      setFeaturedArticles(response.data.featured);
-      */
-
-      // Dummy data for frontend testing
-      const dummyArticles = [
-        {
-          id: 1,
-          title: 'Revolutionary AI System Transforms Healthcare',
-          description: 'A groundbreaking artificial intelligence system has been developed that can diagnose diseases with unprecedented accuracy, potentially revolutionizing medical care worldwide.',
-          image: 'https://via.placeholder.com/400x250',
-          category: 'technology',
-          source: 'Tech News Daily',
-          publishedAt: '2 hours ago',
-          url: '#'
-        },
-        {
-          id: 2,
-          title: 'Global Climate Summit Reaches Historic Agreement',
-          description: 'World leaders have reached a comprehensive agreement on climate action, setting ambitious targets for carbon reduction and renewable energy adoption.',
-          image: 'https://via.placeholder.com/400x250',
-          category: 'politics',
-          source: 'World Report',
-          publishedAt: '4 hours ago',
-          url: '#'
-        },
-        {
-          id: 3,
-          title: 'Championship Finals Set for This Weekend',
-          description: 'The two top teams will face off in what promises to be the most exciting championship game in years, with millions expected to watch.',
-          image: 'https://via.placeholder.com/400x250',
-          category: 'sports',
-          source: 'Sports Central',
-          publishedAt: '6 hours ago',
-          url: '#'
-        },
-        {
-          id: 4,
-          title: 'Market Reaches New All-Time High',
-          description: 'Stock markets continue their upward trajectory as investors remain optimistic about economic recovery and growth prospects.',
-          image: 'https://via.placeholder.com/400x250',
-          category: 'business',
-          source: 'Financial Times',
-          publishedAt: '8 hours ago',
-          url: '#'
-        },
-        {
-          id: 5,
-          title: 'New Space Mission Launches Successfully',
-          description: 'A groundbreaking space mission has launched successfully, carrying advanced scientific instruments to explore the outer reaches of our solar system.',
-          image: 'https://via.placeholder.com/400x250',
-          category: 'science',
-          source: 'Space News',
-          publishedAt: '10 hours ago',
-          url: '#'
-        },
-        {
-          id: 6,
-          title: 'Breakthrough in Renewable Energy Storage',
-          description: 'Scientists have developed a revolutionary battery technology that could solve the energy storage challenge for renewable power sources.',
-          image: 'https://via.placeholder.com/400x250',
-          category: 'technology',
-          source: 'Energy Today',
-          publishedAt: '12 hours ago',
-          url: '#'
-        }
-      ];
-
-      const dummyFeatured = [
-        {
-          id: 7,
-          title: 'Major Tech Breakthrough Announced',
-          description: 'Scientists have made a groundbreaking discovery that could revolutionize the way we interact with technology and reshape our digital future.',
-          image: 'https://via.placeholder.com/800x400',
-          category: 'breaking',
-          source: 'Innovation Weekly',
-          publishedAt: '1 hour ago',
-          url: '#'
-        },
-        {
-          id: 8,
-          title: 'Global Peace Initiative Launched',
-          description: 'World leaders unite to launch an unprecedented peace initiative aimed at resolving conflicts and promoting international cooperation.',
-          image: 'https://via.placeholder.com/400x200',
-          category: 'politics',
-          source: 'Global News',
-          publishedAt: '3 hours ago',
-          url: '#'
-        },
-        {
-          id: 9,
-          title: 'Olympic Records Shattered',
-          description: 'Athletes continue to push the boundaries of human performance, breaking multiple Olympic records in spectacular fashion.',
-          image: 'https://via.placeholder.com/400x200',
-          category: 'sports',
-          source: 'Olympic Watch',
-          publishedAt: '5 hours ago',
-          url: '#'
-        }
-      ];
-
-      setArticles(dummyArticles);
-      setFeaturedArticles(dummyFeatured);
+      // Always send at least one required param (country=us)
+      const params = { country: 'us', page: 1, pageSize: 12 };
+      const response = await axios.get('/api/news/top-headlines', { params });
+      setArticles(response.data.articles || []);
+      // For featured, just pick the first 3 articles for now
+      setFeaturedArticles((response.data.articles || []).slice(0, 3));
     } catch (error) {
       console.error('Error loading news:', error);
     } finally {
@@ -147,13 +45,11 @@ const Home = () => {
   const handleBookmark = (article) => {
     const isBookmarked = bookmarkedArticles.some(b => b.id === article.id);
     let updatedBookmarks;
-    
     if (isBookmarked) {
       updatedBookmarks = bookmarkedArticles.filter(b => b.id !== article.id);
     } else {
       updatedBookmarks = [...bookmarkedArticles, article];
     }
-    
     setBookmarkedArticles(updatedBookmarks);
     localStorage.setItem('bookmarkedArticles', JSON.stringify(updatedBookmarks));
   };
@@ -216,7 +112,15 @@ const Home = () => {
             {featuredArticles[0] && (
               <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-2">
                 <NewsCard
-                  article={featuredArticles[0]}
+                  article={{
+                    ...featuredArticles[0],
+                    source: featuredArticles[0].source && typeof featuredArticles[0].source === 'object' && featuredArticles[0].source !== null && !Array.isArray(featuredArticles[0].source)
+                      ? (featuredArticles[0].source.name || '')
+                      : (typeof featuredArticles[0].source === 'string' ? featuredArticles[0].source : ''),
+                    category: featuredArticles[0].category && typeof featuredArticles[0].category === 'object' && featuredArticles[0].category !== null && !Array.isArray(featuredArticles[0].category)
+                      ? (featuredArticles[0].category.name || '')
+                      : (typeof featuredArticles[0].category === 'string' ? featuredArticles[0].category : '')
+                  }}
                   viewMode="magazine"
                   onBookmark={handleBookmark}
                   isBookmarked={isArticleBookmarked(featuredArticles[0].id)}
@@ -239,10 +143,15 @@ const Home = () => {
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        article.category === 'politics' ? 'bg-red-100 text-red-800' :
-                        article.category === 'sports' ? 'bg-green-100 text-green-800' :
+                        (article.category && typeof article.category === 'object' && article.category !== null && !Array.isArray(article.category)
+                          ? article.category.name : (typeof article.category === 'string' ? article.category : '')) === 'politics' ? 'bg-red-100 text-red-800' :
+                        (article.category && typeof article.category === 'object' && article.category !== null && !Array.isArray(article.category)
+                          ? article.category.name : (typeof article.category === 'string' ? article.category : '')) === 'sports' ? 'bg-green-100 text-green-800' :
                         'bg-blue-100 text-blue-800'
-                      }`}>{article.category}</span>
+                      }`}>
+                        {article.category && typeof article.category === 'object' && article.category !== null && !Array.isArray(article.category)
+                          ? article.category.name : (typeof article.category === 'string' ? article.category : '')}
+                      </span>
                       <button
                         onClick={() => handleBookmark(article)}
                         className={`p-1 rounded-full transition-colors ${
@@ -256,6 +165,11 @@ const Home = () => {
                     </div>
                     <h3 className="font-serif font-semibold text-gray-900 mb-2">{article.title}</h3>
                     <p className="text-sm text-gray-600">{article.description}</p>
+                    {/* Show source name if available */}
+                    {article.source && (
+                      <p className="text-xs text-gray-400 mt-2">Source: {article.source && typeof article.source === 'object' && article.source !== null && !Array.isArray(article.source)
+                        ? article.source.name : (typeof article.source === 'string' ? article.source : '')}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -273,7 +187,15 @@ const Home = () => {
         {articles.map((article) => (
           <NewsCard
             key={article.id}
-            article={article}
+            article={{
+              ...article,
+              source: article.source && typeof article.source === 'object' && article.source !== null && !Array.isArray(article.source)
+                ? (article.source.name || '')
+                : (typeof article.source === 'string' ? article.source : ''),
+              category: article.category && typeof article.category === 'object' && article.category !== null && !Array.isArray(article.category)
+                ? (article.category.name || '')
+                : (typeof article.category === 'string' ? article.category : '')
+            }}
             viewMode={viewMode}
             onBookmark={handleBookmark}
             isBookmarked={isArticleBookmarked(article.id)}

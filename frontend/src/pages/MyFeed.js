@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
+import ArticleModal from '../components/ArticleModal';
 
 const MyFeed = () => {
   const { user } = useAuth();
@@ -7,6 +9,8 @@ const MyFeed = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [bookmarkedArticles, setBookmarkedArticles] = useState([]);
+  const [selectedArticle, setSelectedArticle] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const filters = [
     { value: 'all', label: 'All News' },
@@ -23,52 +27,12 @@ const MyFeed = () => {
   const loadPersonalizedFeed = async () => {
     try {
       setLoading(true);
-      
-      // Dummy personalized data based on user preferences
-      const userCategories = user?.preferences?.categories || ['technology', 'politics'];
-      const dummyPersonalized = [
-        {
-          id: 4001,
-          title: 'AI Ethics: New Guidelines Proposed',
-          description: 'Technology companies propose comprehensive guidelines for ethical AI development and deployment.',
-          image: 'https://via.placeholder.com/400x250',
-          category: 'technology',
-          source: 'AI Weekly',
-          publishedAt: '30 minutes ago',
-          relevanceScore: 95,
-          readTime: '3 min',
-          url: '#'
-        },
-        {
-          id: 4002,
-          title: 'Election Update: Voter Turnout Increases',
-          description: 'Record voter turnout reported in key districts as election campaigns intensify.',
-          image: 'https://via.placeholder.com/400x250',
-          category: 'politics',
-          source: 'Political Digest',
-          publishedAt: '1 hour ago',
-          relevanceScore: 88,
-          readTime: '2 min',
-          url: '#'
-        },
-        {
-          id: 4003,
-          title: 'Clean Energy Investment Soars',
-          description: 'Global investment in renewable energy reaches new heights as countries commit to net-zero goals.',
-          image: 'https://via.placeholder.com/400x250',
-          category: 'technology',
-          source: 'Green Tech',
-          publishedAt: '2 hours ago',
-          relevanceScore: 82,
-          readTime: '4 min',
-          url: '#'
-        }
-      ].filter(article => 
-        filter === 'all' || 
-        (filter === 'interests' && userCategories.includes(article.category))
-      );
-
-      setPersonalizedNews(dummyPersonalized);
+      let params = { page: 1, pageSize: 10, country: 'us' };
+      if (user?.preferences?.categories?.length) {
+        params.category = user.preferences.categories.join(',');
+      }
+      const response = await axios.get('/api/news/top-headlines', { params });
+      setPersonalizedNews(response.data.articles || []);
     } catch (error) {
       console.error('Error loading personalized feed:', error);
     } finally {
@@ -86,19 +50,27 @@ const MyFeed = () => {
   const handleBookmark = (article) => {
     const isBookmarked = bookmarkedArticles.some(b => b.id === article.id);
     let updatedBookmarks;
-    
     if (isBookmarked) {
       updatedBookmarks = bookmarkedArticles.filter(b => b.id !== article.id);
     } else {
       updatedBookmarks = [...bookmarkedArticles, article];
     }
-    
     setBookmarkedArticles(updatedBookmarks);
     localStorage.setItem('bookmarkedArticles', JSON.stringify(updatedBookmarks));
   };
 
   const isArticleBookmarked = (articleId) => {
     return bookmarkedArticles.some(b => b.id === articleId);
+  };
+
+  const handleReadMore = (article) => {
+    setSelectedArticle(article);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedArticle(null);
   };
 
   if (loading) {
@@ -177,13 +149,19 @@ const MyFeed = () => {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      article.category === 'technology' ? 'bg-blue-100 text-blue-800' :
-                      article.category === 'politics' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
+                      article.category && typeof article.category === 'object' && article.category !== null && !Array.isArray(article.category)
+                        ? article.category.name === 'technology' ? 'bg-blue-100 text-blue-800' :
+                          article.category.name === 'politics' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        : article.category === 'technology' ? 'bg-blue-100 text-blue-800' :
+                          article.category === 'politics' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
                     }`}>
-                      {article.category}
+                      {article.category && typeof article.category === 'object' && article.category !== null && !Array.isArray(article.category)
+                        ? article.category.name : (typeof article.category === 'string' ? article.category : '')}
                     </span>
-                    <span className="text-gray-500 text-sm">{article.source}</span>
+                    <span className="text-gray-500 text-sm">{article.source && typeof article.source === 'object' && article.source !== null && !Array.isArray(article.source)
+                      ? article.source.name : (typeof article.source === 'string' ? article.source : '')}</span>
                     <span className="text-purple-600 text-sm font-medium">{article.relevanceScore}% match</span>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -204,7 +182,10 @@ const MyFeed = () => {
                 <p className="text-gray-600 mb-4">{article.description}</p>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-500">{article.publishedAt}</span>
-                  <button className="text-purple-600 hover:text-purple-800 text-sm font-medium transition-colors">
+                  <button 
+                    onClick={() => handleReadMore(article)}
+                    className="text-purple-600 hover:text-purple-800 text-sm font-medium transition-colors"
+                  >
                     Read More
                   </button>
                 </div>
@@ -227,6 +208,12 @@ const MyFeed = () => {
           </button>
         </div>
       )}
+
+      <ArticleModal
+        article={selectedArticle}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 };
