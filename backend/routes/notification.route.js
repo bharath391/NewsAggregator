@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { createNotification, getUserNotifications } = require('../controllers/notifications.controllers');
-const auth = require('../middlewares/auth'); // assumes you have JWT middleware
+const { createNotification, getUserNotifications } = require('../controllers/notifications.controller');
+const auth = require('../middlewares/auth.middleware'); // fixed import
 
 // Admin or server logic can call this
 router.post('/create', createNotification);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import NewsCard from '../components/NewsCard';
 import ArticleModal from '../components/ArticleModal';
 
@@ -26,48 +27,11 @@ const Headlines = () => {
   const loadHeadlines = async () => {
     try {
       setLoading(true);
-      
-      // Dummy headlines data
-      const dummyHeadlines = [
-        {
-          id: 3001,
-          title: 'Breaking: Major Economic Policy Announced',
-          description: 'Government unveils comprehensive economic reform package aimed at boosting growth and reducing inflation.',
-          image: 'https://via.placeholder.com/400x250',
-          category: 'breaking',
-          source: 'Reuters',
-          publishedAt: '10 minutes ago',
-          priority: 'high',
-          region: region,
-          url: '#'
-        },
-        {
-          id: 3002,
-          title: 'International Trade Deal Signed',
-          description: 'Historic trade agreement between major economies expected to boost global commerce by 15%.',
-          image: 'https://via.placeholder.com/400x250',
-          category: 'business',
-          source: 'Financial Times',
-          publishedAt: '1 hour ago',
-          priority: 'medium',
-          region: region,
-          url: '#'
-        },
-        {
-          id: 3003,
-          title: 'Technology Giant Announces Breakthrough',
-          description: 'Revolutionary quantum computing advancement promises to solve complex problems in seconds.',
-          image: 'https://via.placeholder.com/400x250',
-          category: 'technology',
-          source: 'Tech Insider',
-          publishedAt: '2 hours ago',
-          priority: 'high',
-          region: region,
-          url: '#'
-        }
-      ];
-
-      setHeadlines(dummyHeadlines);
+      // Use selected region for country param, default to 'us' if 'global'
+      let countryParam = region === 'global' ? 'us' : region;
+      const params = { country: countryParam, page: 1, pageSize: 12 };
+      const response = await axios.get('/api/news/top-headlines', { params });
+      setHeadlines(response.data.articles || []);
     } catch (error) {
       console.error('Error loading headlines:', error);
     } finally {
@@ -158,7 +122,15 @@ const Headlines = () => {
           >
             <div className="relative">
               <NewsCard
-                article={article}
+                article={{
+                  ...article,
+                  source: article.source && typeof article.source === 'object' && article.source !== null && !Array.isArray(article.source)
+                    ? (article.source.name || '')
+                    : (typeof article.source === 'string' ? article.source : ''),
+                  category: article.category && typeof article.category === 'object' && article.category !== null && !Array.isArray(article.category)
+                    ? (article.category.name || '')
+                    : (typeof article.category === 'string' ? article.category : '')
+                }}
                 viewMode="list"
                 onBookmark={handleBookmark}
                 isBookmarked={isArticleBookmarked(article.id)}

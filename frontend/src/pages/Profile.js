@@ -194,7 +194,7 @@ const Profile = () => {
                         onChange={() => handleCategoryChange(category.id)}
                         className="rounded text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="text-sm text-gray-700">{category.name}</span>
+                      <span className="text-sm text-gray-700">{typeof category === 'object' && category !== null && !Array.isArray(category) ? category.name : String(category)}</span>
                     </label>
                   ))}
                 </div>
@@ -212,7 +212,7 @@ const Profile = () => {
                         onChange={() => handleSourceChange(source.id)}
                         className="rounded text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="text-sm text-gray-700">{source.name}</span>
+                      <span className="text-sm text-gray-700">{typeof source === 'object' && source !== null && !Array.isArray(source) ? source.name : String(source)}</span>
                     </label>
                   ))}
                 </div>
@@ -257,7 +257,7 @@ const Profile = () => {
                     const category = categories.find(c => c.id === categoryId);
                     return category ? (
                       <span key={categoryId} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                        {category.name}
+                        {typeof category === 'object' && category !== null && !Array.isArray(category) ? category.name : String(category)}
                       </span>
                     ) : null;
                   })}
@@ -270,7 +270,7 @@ const Profile = () => {
                   {profileData.preferences.sources.slice(0, 3).map((sourceId) => {
                     const source = sources.find(s => s.id === sourceId);
                     return source ? (
-                      <p key={sourceId} className="text-sm text-gray-600">• {source.name}</p>
+                      <p key={sourceId} className="text-sm text-gray-600">• {typeof source === 'object' && source !== null && !Array.isArray(source) ? source.name : String(source)}</p>
                     ) : null;
                   })}
                   {profileData.preferences.sources.length > 3 && (

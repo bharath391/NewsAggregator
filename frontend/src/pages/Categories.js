@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import NewsCard from '../components/NewsCard';
 import ArticleModal from '../components/ArticleModal';
 
@@ -35,167 +36,10 @@ const Categories = () => {
   const loadCategoryNews = async (categoryId) => {
     try {
       setLoading(true);
-      setSelectedCategory(categoryId);
-      
-      // Commented out API call - replace with actual backend later
-      /*
-      const response = await axios.get(`/api/news/category/${categoryId}`, {
-        headers: { Authorization: `Bearer ${user.token}` }
-      });
-      setCategoryNews(response.data.articles);
-      */
-
-      // Dummy data for frontend testing
-      const dummyArticles = {
-        technology: [
-          {
-            id: 101,
-            title: 'Quantum Computing Breakthrough Achieved',
-            description: 'Researchers have achieved a major breakthrough in quantum computing that could revolutionize computational power.',
-            image: 'https://via.placeholder.com/400x250',
-            category: 'technology',
-            source: 'Tech Review',
-            publishedAt: '2 hours ago',
-            url: '#'
-          },
-          {
-            id: 102,
-            title: 'New AI Model Surpasses Human Performance',
-            description: 'The latest AI model has demonstrated capabilities that exceed human performance in complex reasoning tasks.',
-            image: 'https://via.placeholder.com/400x250',
-            category: 'technology',
-            source: 'AI Today',
-            publishedAt: '4 hours ago',
-            url: '#'
-          },
-          {
-            id: 103,
-            title: 'Revolutionary Battery Technology Unveiled',
-            description: 'A new battery technology promises to charge electric vehicles in minutes rather than hours.',
-            image: 'https://via.placeholder.com/400x250',
-            category: 'technology',
-            source: 'Energy Tech',
-            publishedAt: '6 hours ago',
-            url: '#'
-          }
-        ],
-        politics: [
-          {
-            id: 201,
-            title: 'International Trade Agreement Signed',
-            description: 'Major economies have signed a comprehensive trade agreement aimed at boosting global commerce.',
-            image: 'https://via.placeholder.com/400x250',
-            category: 'politics',
-            source: 'Political Weekly',
-            publishedAt: '1 hour ago',
-            url: '#'
-          },
-          {
-            id: 202,
-            title: 'Climate Policy Reforms Announced',
-            description: 'Government announces sweeping climate policy reforms to address environmental challenges.',
-            image: 'https://via.placeholder.com/400x250',
-            category: 'politics',
-            source: 'Policy Today',
-            publishedAt: '3 hours ago',
-            url: '#'
-          }
-        ],
-        sports: [
-          {
-            id: 301,
-            title: 'World Cup Preparations Underway',
-            description: 'Teams are making final preparations for the upcoming World Cup with intense training sessions.',
-            image: 'https://via.placeholder.com/400x250',
-            category: 'sports',
-            source: 'Sports News',
-            publishedAt: '30 minutes ago',
-            url: '#'
-          },
-          {
-            id: 302,
-            title: 'Olympic Records Continue to Fall',
-            description: 'Athletes are pushing the boundaries of human performance with new Olympic records.',
-            image: 'https://via.placeholder.com/400x250',
-            category: 'sports',
-            source: 'Olympic Report',
-            publishedAt: '2 hours ago',
-            url: '#'
-          }
-        ],
-        business: [
-          {
-            id: 401,
-            title: 'Tech Giant Announces Major Acquisition',
-            description: 'A leading technology company has announced the acquisition of a promising startup.',
-            image: 'https://via.placeholder.com/400x250',
-            category: 'business',
-            source: 'Business Daily',
-            publishedAt: '1 hour ago',
-            url: '#'
-          },
-          {
-            id: 402,
-            title: 'Market Volatility Continues',
-            description: 'Financial markets experience continued volatility amid global economic uncertainty.',
-            image: 'https://via.placeholder.com/400x250',
-            category: 'business',
-            source: 'Market Watch',
-            publishedAt: '3 hours ago',
-            url: '#'
-          }
-        ],
-        entertainment: [
-          {
-            id: 501,
-            title: 'Blockbuster Movie Breaks Box Office Records',
-            description: 'The latest blockbuster film has shattered opening weekend box office records worldwide.',
-            image: 'https://via.placeholder.com/400x250',
-            category: 'entertainment',
-            source: 'Hollywood Reporter',
-            publishedAt: '4 hours ago',
-            url: '#'
-          }
-        ],
-        health: [
-          {
-            id: 601,
-            title: 'New Treatment Shows Promise',
-            description: 'Clinical trials for a new treatment show promising results for previously incurable conditions.',
-            image: 'https://via.placeholder.com/400x250',
-            category: 'health',
-            source: 'Medical News',
-            publishedAt: '2 hours ago',
-            url: '#'
-          }
-        ],
-        science: [
-          {
-            id: 701,
-            title: 'Mars Mission Discovers Water',
-            description: 'The latest Mars mission has discovered evidence of liquid water beneath the planet\'s surface.',
-            image: 'https://via.placeholder.com/400x250',
-            category: 'science',
-            source: 'Space Science',
-            publishedAt: '5 hours ago',
-            url: '#'
-          }
-        ],
-        world: [
-          {
-            id: 801,
-            title: 'Global Summit Addresses Climate Change',
-            description: 'World leaders gather to address pressing climate change issues and sustainable development.',
-            image: 'https://via.placeholder.com/400x250',
-            category: 'world',
-            source: 'Global News',
-            publishedAt: '1 hour ago',
-            url: '#'
-          }
-        ]
-      };
-
-      setCategoryNews(dummyArticles[categoryId] || []);
+      // Always send at least one required param (country=us)
+      const params = { category: categoryId, country: 'us', page: 1, pageSize: 12 };
+      const response = await axios.get('/api/news/top-headlines', { params });
+      setCategoryNews(response.data.articles || []);
     } catch (error) {
       console.error('Error loading category news:', error);
     } finally {
@@ -206,13 +50,11 @@ const Categories = () => {
   const handleBookmark = (article) => {
     const isBookmarked = bookmarkedArticles.some(b => b.id === article.id);
     let updatedBookmarks;
-    
     if (isBookmarked) {
       updatedBookmarks = bookmarkedArticles.filter(b => b.id !== article.id);
     } else {
       updatedBookmarks = [...bookmarkedArticles, article];
     }
-    
     setBookmarkedArticles(updatedBookmarks);
     localStorage.setItem('bookmarkedArticles', JSON.stringify(updatedBookmarks));
   };
@@ -291,7 +133,15 @@ const Categories = () => {
               {categoryNews.map((article) => (
                 <NewsCard
                   key={article.id}
-                  article={article}
+                  article={{
+                    ...article,
+                    source: article.source && typeof article.source === 'object' && article.source !== null && !Array.isArray(article.source)
+                      ? (article.source.name || '')
+                      : (typeof article.source === 'string' ? article.source : ''),
+                    category: article.category && typeof article.category === 'object' && article.category !== null && !Array.isArray(article.category)
+                      ? (article.category.name || '')
+                      : (typeof article.category === 'string' ? article.category : '')
+                  }}
                   viewMode="grid"
                   onBookmark={handleBookmark}
                   isBookmarked={isArticleBookmarked(article.id)}
