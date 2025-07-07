@@ -11,6 +11,9 @@ const MyFeed = () => {
   const [bookmarkedArticles, setBookmarkedArticles] = useState([]);
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 10;
 
   const filters = [
     { value: 'all', label: 'All News' },
@@ -22,17 +25,34 @@ const MyFeed = () => {
   useEffect(() => {
     loadPersonalizedFeed();
     loadBookmarks();
-  }, [filter, user]);
+  }, [filter, user, page]);
 
   const loadPersonalizedFeed = async () => {
     try {
       setLoading(true);
-      let params = { page: 1, pageSize: 10, country: 'us' };
-      if (user?.preferences?.categories?.length) {
-        params.category = user.preferences.categories.join(',');
+      // Use user preferences for country if available, else default to 'us'
+      // Add a randomization parameter to force new results
+      let params = { page, pageSize, country: user?.country || 'us', rand: Math.random() };
+      if (filter === 'interests' && user?.preferences?.categories?.length) {
+        params.category = user.preferences.categories[0];
+      } else if (filter === 'sources' && user?.preferences?.sources?.length) {
+        params.sources = user.preferences.sources.join(',');
       }
+      // For 'recent', you may want to fetch from a different endpoint or use localStorage
+      // For now, fallback to all news
       const response = await axios.get('/api/news/top-headlines', { params });
-      setPersonalizedNews(response.data.articles || []);
+      // Shuffle articles to change their order on each fetch
+      const articles = response.data.articles || [];
+      for (let i = articles.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [articles[i], articles[j]] = [articles[j], articles[i]];
+      }
+      setPersonalizedNews(articles);
+      if (response.data.totalResults) {
+        setTotalPages(Math.ceil(response.data.totalResults / pageSize));
+      } else {
+        setTotalPages(1);
+      }
     } catch (error) {
       console.error('Error loading personalized feed:', error);
     } finally {
@@ -47,20 +67,27 @@ const MyFeed = () => {
     }
   };
 
-  const handleBookmark = (article) => {
-    const isBookmarked = bookmarkedArticles.some(b => b.id === article.id);
+  const handleBookmark = async (article) => {
+    const articleId = article.url || article.title;
+    const isBookmarked = bookmarkedArticles.some(b => (b.url || b.title) === articleId);
     let updatedBookmarks;
-    if (isBookmarked) {
-      updatedBookmarks = bookmarkedArticles.filter(b => b.id !== article.id);
-    } else {
-      updatedBookmarks = [...bookmarkedArticles, article];
+    try {
+      // Sync with backend
+      const res = await axios.post('/api/auth/bookmarks/toggle', {
+        email: user.email,
+        article
+      });
+      updatedBookmarks = res.data.bookmarks || [];
+      setBookmarkedArticles(updatedBookmarks);
+      localStorage.setItem('bookmarkedArticles', JSON.stringify(updatedBookmarks));
+    } catch (err) {
+      console.error('Bookmark error:', err);
     }
-    setBookmarkedArticles(updatedBookmarks);
-    localStorage.setItem('bookmarkedArticles', JSON.stringify(updatedBookmarks));
   };
 
   const isArticleBookmarked = (articleId) => {
-    return bookmarkedArticles.some(b => b.id === articleId);
+    // Accept url or title as id
+    return bookmarkedArticles.some(b => (b.url || b.title) === articleId);
   };
 
   const handleReadMore = (article) => {
@@ -72,6 +99,22 @@ const MyFeed = () => {
     setIsModalOpen(false);
     setSelectedArticle(null);
   };
+
+  useEffect(() => {
+    // Load bookmarks from backend on mount
+    const fetchBookmarks = async () => {
+      try {
+        const res = await axios.get('/api/auth/bookmarks', { params: { email: user.email } });
+        setBookmarkedArticles(res.data.bookmarks || []);
+        localStorage.setItem('bookmarkedArticles', JSON.stringify(res.data.bookmarks || []));
+      } catch (err) {
+        // fallback to localStorage if backend fails
+        const saved = localStorage.getItem('bookmarkedArticles');
+        if (saved) setBookmarkedArticles(JSON.parse(saved));
+      }
+    };
+    if (user?.email) fetchBookmarks();
+  }, [user]);
 
   if (loading) {
     return (
@@ -109,7 +152,6 @@ const MyFeed = () => {
           </div>
         </div>
       </div>
-
       {/* User Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg transform hover:scale-105 transition-transform duration-300">
@@ -131,7 +173,6 @@ const MyFeed = () => {
           </div>
         </div>
       </div>
-
       <div className="space-y-6">
         {personalizedNews.map((article, index) => (
           <div 
@@ -141,7 +182,7 @@ const MyFeed = () => {
           >
             <div className="flex">
               <img 
-                src={article.image || 'https://via.placeholder.com/300x200'} 
+                src={article.urlToImage || 'image.png'} 
                 alt={article.title}
                 className="w-64 h-40 object-cover"
               />
@@ -194,7 +235,24 @@ const MyFeed = () => {
           </div>
         ))}
       </div>
-
+      {/* Pagination Controls */}
+      <div className="flex justify-center mt-8">
+        <button
+          className="px-4 py-2 mx-1 bg-gray-200 rounded disabled:opacity-50"
+          onClick={() => setPage(page - 1)}
+          disabled={page === 1}
+        >
+          Previous
+        </button>
+        <span className="px-4 py-2 mx-1">Page {page} of {totalPages}</span>
+        <button
+          className="px-4 py-2 mx-1 bg-gray-200 rounded disabled:opacity-50"
+          onClick={() => setPage(page + 1)}
+          disabled={page === totalPages}
+        >
+          Next
+        </button>
+      </div>
       {personalizedNews.length === 0 && (
         <div className="text-center py-16">
           <div className="text-gray-400 text-6xl mb-4">📱</div>
@@ -208,7 +266,6 @@ const MyFeed = () => {
           </button>
         </div>
       )}
-
       <ArticleModal
         article={selectedArticle}
         isOpen={isModalOpen}

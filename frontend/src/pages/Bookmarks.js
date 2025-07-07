@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
 import NewsCard from '../components/NewsCard';
 import ArticleModal from '../components/ArticleModal';
 
 const Bookmarks = () => {
+  const { user } = useAuth();
   const [bookmarkedArticles, setBookmarkedArticles] = useState([]);
   const [viewMode, setViewMode] = useState('grid');
   const [selectedArticle, setSelectedArticle] = useState(null);
@@ -10,20 +13,31 @@ const Bookmarks = () => {
 
   useEffect(() => {
     loadBookmarks();
-  }, []);
+    // eslint-disable-next-line
+  }, [user]);
 
-  const loadBookmarks = () => {
-    const saved = localStorage.getItem('bookmarkedArticles');
-    if (saved) {
-      const arr = JSON.parse(saved);
-      setBookmarkedArticles(Array.isArray(arr) && arr.length > 0 ? [arr[0]] : []);
+  const loadBookmarks = async () => {
+    if (!user?.email) return setBookmarkedArticles([]);
+    try {
+      const res = await axios.get('/api/auth/bookmarks', { params: { email: user.email } });
+      setBookmarkedArticles(res.data.bookmarks || []);
+    } catch (err) {
+      setBookmarkedArticles([]);
     }
   };
 
-  const handleRemoveBookmark = (article) => {
-    const updatedBookmarks = bookmarkedArticles.filter(b => b.id !== article.id);
-    setBookmarkedArticles(updatedBookmarks);
-    localStorage.setItem('bookmarkedArticles', JSON.stringify(updatedBookmarks));
+  const handleRemoveBookmark = async (article) => {
+    const articleId = article.url || article.title;
+    try {
+      const res = await axios.post('/api/auth/bookmarks/toggle', {
+        email: user.email,
+        article
+      });
+      setBookmarkedArticles(res.data.bookmarks || []);
+    } catch (err) {
+      // fallback: remove locally
+      setBookmarkedArticles(bookmarkedArticles.filter(b => (b.url || b.title) !== articleId));
+    }
   };
 
   const clearAllBookmarks = () => {

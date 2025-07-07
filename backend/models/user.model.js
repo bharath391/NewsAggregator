@@ -25,6 +25,10 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: 'in' 
   },
+  bookmarks: {
+    type: [Object], // Store full article objects
+    default: []
+  }
 });
 
 module.exports = mongoose.model('User', UserSchema);

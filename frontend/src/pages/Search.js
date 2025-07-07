@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import NewsCard from '../components/NewsCard';
 import ArticleModal from '../components/ArticleModal';
+import { useAuth } from '../contexts/AuthContext';
 
 const Search = () => {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -51,16 +53,27 @@ const Search = () => {
 
   const searchNews = async (query = searchQuery) => {
     if (!query.trim()) return;
-
     try {
       setLoading(true);
       setHasSearched(true);
       saveSearchHistory(query);
-
-      // Always send at least one required param (q=searchTerm)
-      const params = { q: query, page: 1, pageSize: 12 };
+      let params = { q: query, page: 1, pageSize: 12, rand: Math.random() };
+      if (user?.country) {
+        params.country = user.country;
+      }
+      if (user?.preferences?.categories?.length) {
+        params.category = user.preferences.categories[0];
+      } else if (user?.preferences?.sources?.length) {
+        params.sources = user.preferences.sources.join(',');
+      }
       const response = await axios.get('/api/news/everything', { params });
-      setSearchResults(response.data.articles || []);
+      // Shuffle articles to change their order on each fetch
+      const articles = response.data.articles || [];
+      for (let i = articles.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [articles[i], articles[j]] = [articles[j], articles[i]];
+      }
+      setSearchResults(articles);
     } catch (error) {
       console.error('Search error:', error);
     } finally {

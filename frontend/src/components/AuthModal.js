@@ -50,29 +50,26 @@ const AuthModal = ({ onClose }) => {
         <h2 className="text-2xl font-serif font-bold text-gray-900 mb-6 text-center">
           {isLogin ? 'Welcome Back' : 'Join Us'}
         </h2>
-        
         {error && (
           <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
             {error}
           </div>
         )}
-
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Username
+              {isLogin ? 'Email' : 'Username'}
             </label>
             <input
-              type="text"
+              type={isLogin ? 'email' : 'text'}
               name="username"
               value={formData.username}
               onChange={handleInputChange}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter your username"
+              placeholder={isLogin ? 'Enter your email' : 'Enter your username'}
             />
           </div>
-          
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Password
@@ -87,7 +84,6 @@ const AuthModal = ({ onClose }) => {
               placeholder="Enter your password"
             />
           </div>
-          
           <button
             type="submit"
             disabled={loading}
@@ -96,8 +92,6 @@ const AuthModal = ({ onClose }) => {
             {loading ? 'Please wait...' : (isLogin ? 'Login' : 'Register')}
           </button>
         </form>
-
-        {/* Register Form - shown when not login */}
         {!isLogin && (
           <div className="mt-4">
             <div>
@@ -116,7 +110,6 @@ const AuthModal = ({ onClose }) => {
             </div>
           </div>
         )}
-
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             {isLogin ? "Don't have an account?" : "Already have an account?"}
@@ -132,7 +125,6 @@ const AuthModal = ({ onClose }) => {
             </button>
           </p>
         </div>
-
         <div className="mt-4 text-center">
           <p className="text-xs text-gray-500">
             Demo credentials: any username/password combination will work

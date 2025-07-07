@@ -2,14 +2,19 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import NewsCard from '../components/NewsCard';
 import ArticleModal from '../components/ArticleModal';
+import { useAuth } from '../contexts/AuthContext';
 
 const Headlines = () => {
+  const { user } = useAuth();
   const [headlines, setHeadlines] = useState([]);
   const [region, setRegion] = useState('global');
   const [loading, setLoading] = useState(true);
   const [bookmarkedArticles, setBookmarkedArticles] = useState([]);
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 12;
 
   const regions = [
     { value: 'global', label: 'Global', flag: '🌍' },
@@ -22,16 +27,31 @@ const Headlines = () => {
   useEffect(() => {
     loadHeadlines();
     loadBookmarks();
-  }, [region]);
+  }, [region, page, user]);
 
   const loadHeadlines = async () => {
     try {
       setLoading(true);
-      // Use selected region for country param, default to 'us' if 'global'
-      let countryParam = region === 'global' ? 'us' : region;
-      const params = { country: countryParam, page: 1, pageSize: 12 };
+      let countryParam = region === 'global' ? (user?.country || 'us') : region;
+      let params = { country: countryParam, page, pageSize, rand: Math.random() };
+      if (user?.preferences?.categories?.length) {
+        params.category = user.preferences.categories[0];
+      } else if (user?.preferences?.sources?.length) {
+        params.sources = user.preferences.sources.join(',');
+      }
       const response = await axios.get('/api/news/top-headlines', { params });
-      setHeadlines(response.data.articles || []);
+      // Shuffle articles to change their order on each fetch
+      const articles = response.data.articles || [];
+      for (let i = articles.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [articles[i], articles[j]] = [articles[j], articles[i]];
+      }
+      setHeadlines(articles);
+      if (response.data.totalResults) {
+        setTotalPages(Math.ceil(response.data.totalResults / pageSize));
+      } else {
+        setTotalPages(1);
+      }
     } catch (error) {
       console.error('Error loading headlines:', error);
     } finally {
@@ -47,15 +67,14 @@ const Headlines = () => {
   };
 
   const handleBookmark = (article) => {
+    // Only allow one bookmarked article at a time
     const isBookmarked = bookmarkedArticles.some(b => b.id === article.id);
     let updatedBookmarks;
-    
     if (isBookmarked) {
-      updatedBookmarks = bookmarkedArticles.filter(b => b.id !== article.id);
+      updatedBookmarks = [];
     } else {
-      updatedBookmarks = [...bookmarkedArticles, article];
+      updatedBookmarks = [article];
     }
-    
     setBookmarkedArticles(updatedBookmarks);
     localStorage.setItem('bookmarkedArticles', JSON.stringify(updatedBookmarks));
   };
@@ -112,7 +131,6 @@ const Headlines = () => {
           </div>
         </div>
       </div>
-
       <div className="space-y-6">
         {headlines.map((article, index) => (
           <div 
@@ -147,6 +165,29 @@ const Headlines = () => {
           </div>
         ))}
       </div>
+      {/* Pagination Controls */}
+      <div className="flex justify-center mt-8">
+        <button
+          className="px-4 py-2 mx-1 bg-gray-200 rounded disabled:opacity-50"
+          onClick={() => setPage(page - 1)}
+          disabled={page === 1}
+        >
+          Previous
+        </button>
+        <span className="px-4 py-2 mx-1">Page {page} of {totalPages}</span>
+        <button
+          className="px-4 py-2 mx-1 bg-gray-200 rounded disabled:opacity-50"
+          onClick={() => setPage(page + 1)}
+          disabled={page === totalPages}
+        >
+          Next
+        </button>
+      </div>
+      <ArticleModal
+        article={selectedArticle}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 };

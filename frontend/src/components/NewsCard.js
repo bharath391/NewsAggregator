@@ -23,7 +23,7 @@ const NewsCard = ({ article, viewMode = 'grid', onBookmark, isBookmarked, onRead
     return (
       <div className="bg-white rounded-lg shadow-lg overflow-hidden flex">
         <img 
-          src={article.image || 'https://via.placeholder.com/200x150'} 
+          src={article.urlToImage || 'https://via.placeholder.com/200x150'}
           alt={article.title}
           className="w-48 h-32 object-cover"
         />
@@ -99,7 +99,7 @@ const NewsCard = ({ article, viewMode = 'grid', onBookmark, isBookmarked, onRead
           <h3 className="text-xl font-serif font-semibold text-gray-900 mb-3">{article.title}</h3>
           <p className="text-gray-600 mb-4">{article.description}</p>
           <img 
-            src={article.image || 'https://via.placeholder.com/400x200'} 
+            src={article.urlToImage || 'https://via.placeholder.com/400x200'}
             alt={article.title}
             className="w-full h-48 object-cover rounded-md mb-4"
           />
@@ -121,7 +121,7 @@ const NewsCard = ({ article, viewMode = 'grid', onBookmark, isBookmarked, onRead
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
       <img 
-        src={article.image || 'https://via.placeholder.com/400x250'} 
+        src={article.urlToImage || 'https://via.placeholder.com/400x250'}
         alt={article.title}
         className="w-full h-48 object-cover"
       />

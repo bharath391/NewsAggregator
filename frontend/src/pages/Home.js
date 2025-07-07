@@ -17,17 +17,27 @@ const Home = () => {
   useEffect(() => {
     loadNews();
     loadBookmarks();
-  }, []);
+  }, [user]); // depend on user for personalized news
 
   const loadNews = async () => {
     try {
       setLoading(true);
-      // Always send at least one required param (country=us)
-      const params = { country: 'us', page: 1, pageSize: 12 };
+      // Use user preferences for country if available, else default to 'us'
+      let params = { country: user?.country || 'us', page: 1, pageSize: 12, rand: Math.random() };
+      if (user?.preferences?.categories?.length) {
+        params.category = user.preferences.categories[0];
+      } else if (user?.preferences?.sources?.length) {
+        params.sources = user.preferences.sources.join(',');
+      }
       const response = await axios.get('/api/news/top-headlines', { params });
-      setArticles(response.data.articles || []);
-      // For featured, just pick the first 3 articles for now
-      setFeaturedArticles((response.data.articles || []).slice(0, 3));
+      // Shuffle articles to change their order on each fetch
+      const articles = response.data.articles || [];
+      for (let i = articles.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [articles[i], articles[j]] = [articles[j], articles[i]];
+      }
+      setArticles(articles);
+      setFeaturedArticles(articles.slice(0, 3));
     } catch (error) {
       console.error('Error loading news:', error);
     } finally {
@@ -43,12 +53,13 @@ const Home = () => {
   };
 
   const handleBookmark = (article) => {
+    // Only allow one bookmarked article at a time
     const isBookmarked = bookmarkedArticles.some(b => b.id === article.id);
     let updatedBookmarks;
     if (isBookmarked) {
-      updatedBookmarks = bookmarkedArticles.filter(b => b.id !== article.id);
+      updatedBookmarks = [];
     } else {
-      updatedBookmarks = [...bookmarkedArticles, article];
+      updatedBookmarks = [article];
     }
     setBookmarkedArticles(updatedBookmarks);
     localStorage.setItem('bookmarkedArticles', JSON.stringify(updatedBookmarks));
@@ -136,7 +147,7 @@ const Home = () => {
               } rounded-lg p-2`}>
                 <div className="bg-white rounded-lg shadow-lg overflow-hidden">
                   <img 
-                    src={article.image || 'https://via.placeholder.com/400x200'} 
+                    src={article.urlToImage || 'https://via.placeholder.com/400x200'} 
                     alt={article.title}
                     className="w-full h-32 object-cover"
                   />
