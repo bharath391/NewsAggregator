@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import NewsCard from '../components/NewsCard';
 import ArticleModal from '../components/ArticleModal';
+import { useAuth } from '../contexts/AuthContext';
 
 const Categories = () => {
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [categoryNews, setCategoryNews] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -36,10 +38,19 @@ const Categories = () => {
   const loadCategoryNews = async (categoryId) => {
     try {
       setLoading(true);
-      // Always send at least one required param (country=us)
-      const params = { category: categoryId, country: 'us', page: 1, pageSize: 12 };
+      let params = { category: categoryId, country: user?.country || 'us', page: 1, pageSize: 12, rand: Math.random() };
+      if (user?.preferences?.sources?.length) {
+        params.sources = user.preferences.sources.join(',');
+      }
       const response = await axios.get('/api/news/top-headlines', { params });
-      setCategoryNews(response.data.articles || []);
+      // Shuffle articles to change their order on each fetch
+      const articles = response.data.articles || [];
+      for (let i = articles.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [articles[i], articles[j]] = [articles[j], articles[i]];
+      }
+      setCategoryNews(articles);
+      setSelectedCategory(categoryId);
     } catch (error) {
       console.error('Error loading category news:', error);
     } finally {
@@ -84,7 +95,6 @@ const Categories = () => {
         <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Categories</h1>
         <p className="text-gray-600 mt-2">Explore news by category</p>
       </div>
-
       {!selectedCategory ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {categories.map((category) => (
@@ -120,7 +130,6 @@ const Categories = () => {
               </svg>
             </button>
           </div>
-
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
@@ -150,7 +159,6 @@ const Categories = () => {
               ))}
             </div>
           )}
-          
           {!loading && categoryNews.length === 0 && (
             <div className="text-center py-12">
               <p className="text-gray-600">No news articles found for this category.</p>
@@ -158,8 +166,6 @@ const Categories = () => {
           )}
         </div>
       )}
-
-      {/* Article Modal */}
       <ArticleModal
         article={selectedArticle}
         isOpen={isModalOpen}

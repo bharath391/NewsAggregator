@@ -107,3 +107,73 @@ exports.logout = (req, res) => {
     res.status(500).json({ msg: 'Server error' });
   }
 };
+
+// Get user preferences
+exports.getPreferences = async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ msg: 'Email required' });
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+    res.json({
+      preferences: {
+        categories: user.interests || [],
+        sources: user.notifications || [],
+        country: user.country || 'us',
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// Update user preferences
+exports.updatePreferences = async (req, res) => {
+  try {
+    const { email, categories, sources, country } = req.body;
+    if (!email) return res.status(400).json({ msg: 'Email required' });
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+    if (categories) user.interests = categories;
+    if (sources) user.notifications = sources;
+    if (country) user.country = country;
+    await user.save();
+    res.json({ message: 'Preferences updated' });
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// Get user bookmarks
+exports.getBookmarks = async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ msg: 'Email required' });
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+    res.json({ bookmarks: user.bookmarks || [] });
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// Add or remove a bookmark
+exports.toggleBookmark = async (req, res) => {
+  try {
+    const { email, article } = req.body;
+    if (!email || !article) return res.status(400).json({ msg: 'Email and article required' });
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+    const articleId = article.url || article.title;
+    const exists = user.bookmarks.some(b => (b.url || b.title) === articleId);
+    if (exists) {
+      user.bookmarks = user.bookmarks.filter(b => (b.url || b.title) !== articleId);
+    } else {
+      user.bookmarks.push(article);
+    }
+    await user.save();
+    res.json({ bookmarks: user.bookmarks });
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+};

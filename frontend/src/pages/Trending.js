@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import NewsCard from '../components/NewsCard';
 import ArticleModal from '../components/ArticleModal';
+import { useAuth } from '../contexts/AuthContext';
 
 const Trending = () => {
+  const { user } = useAuth();
   const [trendingNews, setTrendingNews] = useState([]);
   const [timeframe, setTimeframe] = useState('today');
   const [loading, setLoading] = useState(true);
@@ -20,15 +22,25 @@ const Trending = () => {
   useEffect(() => {
     loadTrendingNews();
     loadBookmarks();
-  }, [timeframe]);
+  }, [timeframe, user]);
 
   const loadTrendingNews = async () => {
     try {
       setLoading(true);
-      // Always send at least one required param (country=us)
-      let params = { sortBy: 'popularity', page: 1, pageSize: 12, country: 'us' };
+      let params = { sortBy: 'popularity', page: 1, pageSize: 12, country: user?.country || 'us', rand: Math.random() };
+      if (user?.preferences?.categories?.length) {
+        params.category = user.preferences.categories[0];
+      } else if (user?.preferences?.sources?.length) {
+        params.sources = user.preferences.sources.join(',');
+      }
       const response = await axios.get('/api/news/top-headlines', { params });
-      setTrendingNews(response.data.articles || []);
+      // Shuffle articles to change their order on each fetch
+      const articles = response.data.articles || [];
+      for (let i = articles.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [articles[i], articles[j]] = [articles[j], articles[i]];
+      }
+      setTrendingNews(articles);
     } catch (error) {
       console.error('Error loading trending news:', error);
     } finally {
@@ -44,12 +56,13 @@ const Trending = () => {
   };
 
   const handleBookmark = (article) => {
+    // Only allow one bookmarked article at a time
     const isBookmarked = bookmarkedArticles.some(b => b.id === article.id);
     let updatedBookmarks;
     if (isBookmarked) {
-      updatedBookmarks = bookmarkedArticles.filter(b => b.id !== article.id);
+      updatedBookmarks = [];
     } else {
-      updatedBookmarks = [...bookmarkedArticles, article];
+      updatedBookmarks = [article];
     }
     setBookmarkedArticles(updatedBookmarks);
     localStorage.setItem('bookmarkedArticles', JSON.stringify(updatedBookmarks));
@@ -105,7 +118,6 @@ const Trending = () => {
           </div>
         </div>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {trendingNews.map((article, index) => (
           <div 
@@ -117,6 +129,8 @@ const Trending = () => {
               <NewsCard
                 article={{
                   ...article,
+                  image:article.urlToImage || '.././public/image.png',
+                  title: article.title || 'News for you',
                   source: article.source && typeof article.source === 'object' && article.source !== null && !Array.isArray(article.source)
                     ? (article.source.name || '')
                     : (typeof article.source === 'string' ? article.source : ''),
@@ -140,8 +154,6 @@ const Trending = () => {
           </div>
         ))}
       </div>
-
-      {/* Article Modal */}
       <ArticleModal
         article={selectedArticle}
         isOpen={isModalOpen}

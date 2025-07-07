@@ -41,9 +41,9 @@ const getTopHeadlines = async (req, res) => {
       });
     }
 
-    if (pageSize && (pageSize < 1 || pageSize > 15)) {
+    if (pageSize && (pageSize < 1 || pageSize > 100)) {
       return res.status(400).json({
-        error: 'Page size must be between 1 and 15'
+        error: 'Page size must be between 1 and 100'
       });
     }
 
@@ -80,6 +80,9 @@ const getTopHeadlines = async (req, res) => {
     if (country) queryParams.country = country;
     if (page) queryParams.page = parseInt(page);
     if (pageSize) queryParams.pageSize = parseInt(pageSize);
+
+    // Debug log for incoming query params
+    console.log('Top Headlines Params:', queryParams);
 
     // Make API call
     const response = await newsapi.v2.topHeadlines(queryParams);
@@ -421,27 +424,3 @@ module.exports = {
   getLanguages,
   getCategories
 };
-
-// Usage Examples:
-
-/*
-1. Top Headlines Examples:
-   GET /api/news/top-headlines?country=us&category=technology&page=1&pageSize=10
-   GET /api/news/top-headlines?q=bitcoin&language=en&page=1&pageSize=20
-   GET /api/news/top-headlines?sources=bbc-news,cnn&page=1
-
-2. Everything Examples:
-   GET /api/news/everything?q=artificial intelligence&from=2025-06-01&to=2025-06-30&sortBy=popularity&page=1&pageSize=15
-   GET /api/news/everything?domains=techcrunch.com,wired.com&q=startup&language=en&page=1
-   GET /api/news/everything?qInTitle=climate change&from=2025-06-01&sortBy=publishedAt&page=1
-
-3. Sources Examples:
-   GET /api/news/sources?category=technology&language=en&country=us
-   GET /api/news/sources?category=business&country=gb
-   GET /api/news/sources
-
-4. Utility Examples:
-   GET /api/news/countries
-   GET /api/news/languages
-   GET /api/news/categories
-*/

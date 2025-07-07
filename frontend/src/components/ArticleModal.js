@@ -48,7 +48,7 @@ const ArticleModal = ({ article, isOpen, onClose }) => {
         <div className="p-6">
           {/* Featured Image */}
           <img 
-            src={article.image || 'https://via.placeholder.com/800x400'} 
+            src={article.urlToImage || 'https://via.placeholder.com/800x400'}
             alt={article.title}
             className="w-full h-64 object-cover rounded-lg mb-6"
           />

@@ -25,94 +25,53 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      // In a real app, this would be an API call
-      // For now, we'll simulate with dummy data
-      
-      // Commented out API call - replace with actual backend later
-      /*
-      const response = await axios.post('/api/auth/login', {
-        username,
-        password
+      // Use username as email for backend
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: username, password })
       });
-      const userData = response.data;
-      */
-
-      // Dummy user data for frontend testing - name based on username
-      const userData = {
-        id: 1,
-        name: username,
-        username: username,
-        email: `${username}@example.com`,
-        preferences: {
-          categories: ['technology', 'politics'],
-          sources: ['bbc', 'cnn'],
-          viewMode: 'grid'
-        },
-        settings: {
-          darkMode: false,
-          compactView: false,
-          articlesPerPage: 12,
-          notifications: {
-            breaking: true,
-            daily: true
-          }
-        }
-      };
-
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.msg || 'Invalid credentials');
+      }
+      const userData = await response.json();
       setUser(userData);
       localStorage.setItem('newsAggregatorUser', JSON.stringify(userData));
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
-      return { success: false, error: 'Invalid credentials' };
+      return { success: false, error: error.message || 'Invalid credentials' };
     }
   };
 
   const register = async (username, email, password) => {
     try {
-      // In a real app, this would be an API call
-      // Commented out API call - replace with actual backend later
-      /*
-      const response = await axios.post('/api/auth/register', {
-        username,
-        email,
-        password
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: username, email, password })
       });
-      const userData = response.data;
-      */
-
-      // Dummy user data for frontend testing
-      const userData = {
-        id: Date.now(), // Simple ID generation for demo
-        name: username,
-        username: username,
-        email,
-        preferences: {
-          categories: [],
-          sources: [],
-          viewMode: 'grid'
-        },
-        settings: {
-          darkMode: false,
-          compactView: false,
-          articlesPerPage: 12,
-          notifications: {
-            breaking: true,
-            daily: true
-          }
-        }
-      };
-
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.msg || 'Registration failed');
+      }
+      const userData = await response.json();
       setUser(userData);
       localStorage.setItem('newsAggregatorUser', JSON.stringify(userData));
       return { success: true };
     } catch (error) {
       console.error('Registration error:', error);
-      return { success: false, error: 'Registration failed' };
+      return { success: false, error: error.message || 'Registration failed' };
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) {
+      // Ignore errors on logout
+    }
     setUser(null);
     localStorage.removeItem('newsAggregatorUser');
   };

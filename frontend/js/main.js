@@ -35,27 +35,24 @@ class NewsAggregator {
     login() {
         const email = document.getElementById('loginEmail').value;
         const password = document.getElementById('loginPassword').value;
-
         if (!email || !password) {
             alert('Please fill in all fields');
             return;
         }
-
-        // Mock authentication - Replace with actual API call
+        // Uncomment and configure for real API:
         /*
-        axios.post('/api/auth/login', {
-            email: email,
-            password: password
-        }).then(response => {
-            this.currentUser = response.data.user;
-            localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-            this.updateUserDisplay();
-            this.hideAuthModal();
-        }).catch(error => {
-            alert('Login failed: ' + error.message);
-        });
+        axios.post('/api/auth/login', { email, password })
+            .then(response => {
+                this.currentUser = response.data.user;
+                localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+                this.updateUserDisplay();
+                this.hideAuthModal();
+                this.loadNews();
+            })
+            .catch(error => {
+                alert('Login failed: ' + (error.response?.data?.message || error.message));
+            });
         */
-
         // Mock successful login
         this.currentUser = {
             id: 1,
@@ -76,28 +73,24 @@ class NewsAggregator {
         const name = document.getElementById('registerName').value;
         const email = document.getElementById('registerEmail').value;
         const password = document.getElementById('registerPassword').value;
-
         if (!name || !email || !password) {
             alert('Please fill in all fields');
             return;
         }
-
-        // Mock registration - Replace with actual API call
+        // Uncomment and configure for real API:
         /*
-        axios.post('/api/auth/register', {
-            name: name,
-            email: email,
-            password: password
-        }).then(response => {
-            this.currentUser = response.data.user;
-            localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-            this.updateUserDisplay();
-            this.hideAuthModal();
-        }).catch(error => {
-            alert('Registration failed: ' + error.message);
-        });
+        axios.post('/api/auth/register', { name, email, password })
+            .then(response => {
+                this.currentUser = response.data.user;
+                localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+                this.updateUserDisplay();
+                this.hideAuthModal();
+                this.loadNews();
+            })
+            .catch(error => {
+                alert('Registration failed: ' + (error.response?.data?.message || error.message));
+            });
         */
-
         // Mock successful registration
         this.currentUser = {
             id: Date.now(),
@@ -131,18 +124,13 @@ class NewsAggregator {
     // News Loading Functions
     async loadNews() {
         try {
-            // Mock API call - Replace with actual API
+            // Uncomment and configure for real API:
             /*
             const response = await axios.get('/api/news', {
-                params: {
-                    category: 'general',
-                    page: 1,
-                    pageSize: 12
-                }
+                params: { page: 1, pageSize: 12 }
             });
             this.displayNews(response.data.articles);
             */
-
             // Mock news data
             const mockNews = this.generateMockNews();
             this.displayNews(mockNews);
@@ -154,18 +142,13 @@ class NewsAggregator {
 
     async loadCategoryNews(category) {
         try {
-            // Mock API call - Replace with actual API
+            // Uncomment and configure for real API:
             /*
             const response = await axios.get('/api/news', {
-                params: {
-                    category: category,
-                    page: 1,
-                    pageSize: 12
-                }
+                params: { category, page: 1, pageSize: 12 }
             });
             this.displayCategoryNews(response.data.articles, category);
             */
-
             // Mock category news data
             const mockNews = this.generateMockNews(category);
             this.displayCategoryNews(mockNews, category);
@@ -177,25 +160,18 @@ class NewsAggregator {
 
     async searchNews(query = null) {
         const searchQuery = query || document.getElementById('searchInput').value;
-        
         if (!searchQuery) {
             alert('Please enter a search query');
             return;
         }
-
         try {
-            // Mock API call - Replace with actual API
+            // Uncomment and configure for real API:
             /*
             const response = await axios.get('/api/news/search', {
-                params: {
-                    q: searchQuery,
-                    page: 1,
-                    pageSize: 20
-                }
+                params: { q: searchQuery, page: 1, pageSize: 20 }
             });
             this.displaySearchResults(response.data.articles, searchQuery);
             */
-
             // Mock search results
             const mockResults = this.generateMockNews('search', searchQuery);
             this.displaySearchResults(mockResults, searchQuery);
@@ -209,7 +185,6 @@ class NewsAggregator {
     displayNews(articles) {
         const container = document.getElementById('newsContainer');
         container.innerHTML = '';
-
         articles.forEach(article => {
             const articleElement = this.createArticleElement(article);
             container.appendChild(articleElement);
@@ -220,10 +195,8 @@ class NewsAggregator {
         const container = document.getElementById('categoryNews');
         const titleElement = document.getElementById('categoryTitle');
         const categoryContainer = document.getElementById('categoryNewsContainer');
-
         titleElement.textContent = category.charAt(0).toUpperCase() + category.slice(1) + ' News';
         categoryContainer.classList.remove('hidden');
-        
         container.innerHTML = '';
         articles.forEach(article => {
             const articleElement = this.createArticleElement(article);
@@ -234,15 +207,12 @@ class NewsAggregator {
     displaySearchResults(articles, query) {
         const container = document.getElementById('searchResultsContainer');
         const resultsSection = document.getElementById('searchResults');
-        
         resultsSection.classList.remove('hidden');
         container.innerHTML = '';
-
         if (articles.length === 0) {
             container.innerHTML = '<p class="text-gray-500 text-center py-8">No results found for your search.</p>';
             return;
         }
-
         articles.forEach(article => {
             const articleElement = this.createSearchResultElement(article);
             container.appendChild(articleElement);
@@ -252,12 +222,10 @@ class NewsAggregator {
     createArticleElement(article) {
         const div = document.createElement('div');
         div.className = 'bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow';
-        
         const isBookmarked = this.bookmarks.some(b => b.id === article.id);
         const bookmarkClass = isBookmarked ? 'text-red-500' : 'text-gray-400';
-
         div.innerHTML = `
-            <img src="${article.image}" alt="${article.title}" class="w-full h-48 object-cover">
+            <img src="${article.urlToImage || article.image || 'https://via.placeholder.com/400x300'}" alt="${article.title}" class="w-full h-48 object-cover">
             <div class="p-6">
                 <div class="flex items-center justify-between mb-3">
                     <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">${article.category}</span>
@@ -279,20 +247,17 @@ class NewsAggregator {
                 </div>
             </div>
         `;
-
         return div;
     }
 
     createSearchResultElement(article) {
         const div = document.createElement('div');
         div.className = 'bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow';
-        
         const isBookmarked = this.bookmarks.some(b => b.id === article.id);
         const bookmarkClass = isBookmarked ? 'text-red-500' : 'text-gray-400';
-
         div.innerHTML = `
             <div class="flex space-x-4">
-                <img src="${article.image}" alt="${article.title}" class="w-24 h-24 object-cover rounded-lg">
+                <img src="${article.urlToImage || article.image || 'https://via.placeholder.com/200x150'}" alt="${article.title}" class="w-24 h-24 object-cover rounded-lg">
                 <div class="flex-1">
                     <div class="flex items-center justify-between mb-2">
                         <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">${article.category}</span>
@@ -315,27 +280,22 @@ class NewsAggregator {
                 </div>
             </div>
         `;
-
         return div;
     }
 
     // Bookmark Functions
     toggleBookmark(articleId) {
         const isBookmarked = this.bookmarks.some(b => b.id === articleId);
-        
         if (isBookmarked) {
             this.bookmarks = this.bookmarks.filter(b => b.id !== articleId);
         } else {
-            // Find the article and add to bookmarks
             const article = this.findArticleById(articleId);
             if (article) {
                 this.bookmarks.push(article);
             }
         }
-        
         localStorage.setItem('bookmarks', JSON.stringify(this.bookmarks));
         this.updateBookmarkButtons();
-        
         if (document.getElementById('bookmarksSection').classList.contains('hidden') === false) {
             this.loadBookmarks();
         }
@@ -353,12 +313,10 @@ class NewsAggregator {
     loadBookmarks() {
         const container = document.getElementById('bookmarksContainer');
         container.innerHTML = '';
-
         if (this.bookmarks.length === 0) {
             container.innerHTML = '<p class="text-gray-500 text-center py-8 col-span-full">No bookmarked articles yet.</p>';
             return;
         }
-
         this.bookmarks.forEach(article => {
             const articleElement = this.createArticleElement(article);
             container.appendChild(articleElement);
@@ -368,16 +326,13 @@ class NewsAggregator {
     // Profile Functions
     loadProfile() {
         if (!this.currentUser) return;
-
         document.getElementById('profileName').value = this.currentUser.name;
         document.getElementById('profileEmail').value = this.currentUser.email;
-
         // Load category preferences
         const categoryPrefs = document.querySelectorAll('.category-pref');
         categoryPrefs.forEach(checkbox => {
             checkbox.checked = this.currentUser.preferences.categories.includes(checkbox.value);
         });
-
         // Load source preferences
         const sourceSelect = document.getElementById('preferredSources');
         Array.from(sourceSelect.options).forEach(option => {
@@ -387,18 +342,14 @@ class NewsAggregator {
 
     saveProfile() {
         if (!this.currentUser) return;
-
         this.currentUser.name = document.getElementById('profileName').value;
         this.currentUser.email = document.getElementById('profileEmail').value;
-
         // Save category preferences
         const categoryPrefs = document.querySelectorAll('.category-pref:checked');
         this.currentUser.preferences.categories = Array.from(categoryPrefs).map(cb => cb.value);
-
         // Save source preferences
         const sourceSelect = document.getElementById('preferredSources');
         this.currentUser.preferences.sources = Array.from(sourceSelect.selectedOptions).map(option => option.value);
-
         localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
         this.updateUserDisplay();
         alert('Profile updated successfully!');
@@ -408,11 +359,8 @@ class NewsAggregator {
     changeView() {
         const viewSelect = document.getElementById('viewToggle');
         this.currentView = viewSelect.value;
-        
         const container = document.getElementById('newsContainer');
         container.className = this.getViewClass();
-        
-        // Reload news with new view
         this.loadNews();
     }
 
@@ -435,7 +383,7 @@ class NewsAggregator {
             id: id,
             title: 'Sample Article',
             description: 'This is a sample article description',
-            image: 'https://via.placeholder.com/400x300',
+            urlToImage: 'https://via.placeholder.com/400x300',
             category: 'General',
             source: 'News Source',
             publishedAt: new Date().toLocaleDateString(),
@@ -444,8 +392,6 @@ class NewsAggregator {
     }
 
     readArticle(articleId) {
-        // This would normally open the full article
-        // For now, we'll just show an alert
         alert('Opening article ' + articleId + '. This would normally open the full article.');
     }
 
@@ -458,7 +404,6 @@ class NewsAggregator {
     generateMockNews(category = 'general', query = null) {
         const categories = ['Technology', 'Politics', 'Sports', 'Business', 'Entertainment', 'Health', 'Science', 'World'];
         const sources = ['BBC News', 'CNN', 'Reuters', 'Associated Press', 'The Guardian', 'NPR', 'Bloomberg', 'TechCrunch'];
-        
         const mockTitles = {
             technology: [
                 'Revolutionary AI Breakthrough Changes Everything',
@@ -517,7 +462,6 @@ class NewsAggregator {
                 'Peace Negotiations Make Progress'
             ]
         };
-
         const articles = [];
         const titleArray = mockTitles[category] || [
             'Breaking News Story Develops',
@@ -526,47 +470,37 @@ class NewsAggregator {
             'Weather Patterns Affect Regional Activities',
             'Educational Initiatives Show Promise'
         ];
-
         for (let i = 0; i < 12; i++) {
             const randomCategory = category === 'general' ? categories[Math.floor(Math.random() * categories.length)] : category.charAt(0).toUpperCase() + category.slice(1);
             const randomSource = sources[Math.floor(Math.random() * sources.length)];
             const randomTitle = titleArray[Math.floor(Math.random() * titleArray.length)];
-            
             articles.push({
                 id: Date.now() + i,
                 title: query ? `${randomTitle} - ${query}` : randomTitle,
                 description: `This is a detailed description of the ${randomCategory.toLowerCase()} news article. It provides comprehensive coverage of the latest developments and their potential impact on various stakeholders.`,
-                image: `https://picsum.photos/400/300?random=${Date.now() + i}`,
+                urlToImage: `https://picsum.photos/400/300?random=${Date.now() + i}`,
                 category: randomCategory,
                 source: randomSource,
                 publishedAt: new Date(Date.now() - Math.random() * 86400000 * 7).toLocaleDateString(),
                 url: '#'
             });
         }
-
         return articles;
     }
 
     // Event Listeners
     setupEventListeners() {
-        // Mobile menu toggle
         document.getElementById('mobileMenuBtn').addEventListener('click', () => {
             document.getElementById('mobileMenu').classList.toggle('hidden');
         });
-
-        // User menu toggle
         document.getElementById('userMenuBtn').addEventListener('click', () => {
             document.getElementById('userMenu').classList.toggle('hidden');
         });
-
-        // Search input enter key
         document.getElementById('searchInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.searchNews();
             }
         });
-
-        // Close dropdowns when clicking outside
         document.addEventListener('click', (e) => {
             if (!e.target.closest('#userMenuBtn')) {
                 document.getElementById('userMenu').classList.add('hidden');
@@ -577,15 +511,10 @@ class NewsAggregator {
 
 // Global Functions for HTML onclick events
 function showSection(sectionName) {
-    // Hide all sections
     document.querySelectorAll('.section').forEach(section => {
         section.classList.add('hidden');
     });
-
-    // Show selected section
     document.getElementById(sectionName + 'Section').classList.remove('hidden');
-
-    // Load section-specific content
     switch (sectionName) {
         case 'bookmarks':
             newsApp.loadBookmarks();
@@ -594,8 +523,6 @@ function showSection(sectionName) {
             newsApp.loadProfile();
             break;
     }
-
-    // Close mobile menu
     document.getElementById('mobileMenu').classList.add('hidden');
 }
 

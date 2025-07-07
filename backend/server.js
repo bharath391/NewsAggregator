@@ -19,6 +19,12 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// Console log the requests - easy debugging
+app.use((req, res, next) => {
+  console.log(`🔍 Request: ${req.method} ${req.url}`);
+  next();
+});
+
 // Route setup
 app.use('/api/news', newsRouter);
 app.use('/api/auth', authRouter);
